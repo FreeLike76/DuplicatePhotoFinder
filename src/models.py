@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import List, Callable
 
 import numpy as np
 from PIL import Image
@@ -11,13 +11,22 @@ from torchvision import models, transforms
 class FeatureExtractor:
     def __init__(
         self,
+        features_size: int,
         model: nn.Module,
         transforms: Callable[[Image.Image], torch.Tensor],
-        device: torch.device = torch.device("cpu")
+        
+        normalize_features: bool = True,
+        device: torch.device = torch.device("cpu"),
+        verbose: bool = True
     ) -> None:
-        self.device = device
+        print(f"Verbosity is {verbose}")
+        self.features_size = features_size
         self.transforms = transforms
         self.model = model
+        
+        self.normalize_features = normalize_features
+        self.device = device
+        self.verbose = verbose
         
         self.model.to(self.device)
         self.model.eval()
@@ -28,39 +37,70 @@ class FeatureExtractor:
         self,
         x: Image.Image
     ) -> np.ndarray:
-        #with torch.no_grad():
         with torch.inference_mode():    
             image_pt = self.transforms(x)
             image_pt = image_pt.unsqueeze(0)
             image_pt = image_pt.to(self.device)
             
             out_pt: torch.Tensor = self.model(image_pt)
-            out_np = out_pt.cpu().numpy()
+            out_np = out_pt.squeeze(0).cpu().numpy()
+        
+        if self.normalize_features:
+            out_np = self.normalize(out_np)
         
         return out_np
 
-class EfficientNetV2S(FeatureExtractor):
-    def __init__(
+    def normalize(
         self,
-        device: torch.device = torch.device("cpu")
-    ) -> None:
-        weights = models.EfficientNet_V2_S_Weights.IMAGENET1K_V1
-        transforms = weights.transforms()
-        
-        model = models.efficientnet_v2_s(weights=weights)
-        model.classifier = nn.Identity()
-        
-        FeatureExtractor.__init__(self, model, transforms, device)
+        x: np.ndarray,
+        eps: float = 1e-6
+    ) -> np.ndarray:
+        norm = np.linalg.norm(x)
+        if norm < eps:
+            if self.verbose: print("Warning! Encountered zero norm vector.")
+            return np.zeros_like(x)
+        x_norm = x / norm
+        return x_norm
+    
+    #def inference_batch(
+    #    self,
+    #    x: List[Image.Image]
+    #) -> np.ndarray:
+    #    with torch.inference_mode():
+    #        images_pt = torch.stack([self.transforms(image) for image in x])
+    #        images_pt = images_pt.to(self.device)
+    #        
+    #        out_pt: torch.Tensor = self.model(images_pt)
+    #        out_np = out_pt.cpu().numpy()
+    #    
+    #    return out_np
 
-class SwinV2S(FeatureExtractor):
-    def __init__(
-        self,
-        device: torch.device = torch.device("cpu")
-    ) -> None:
-        weights = models.Swin_V2_S_Weights.IMAGENET1K_V1
-        transforms = weights.transforms()
+def create_efficientnet_v2_s(device = torch.device("cpu"), **kwargs) -> FeatureExtractor:
+    weights = models.EfficientNet_V2_S_Weights.IMAGENET1K_V1
+    transforms = weights.transforms()
+    
+    model = models.efficientnet_v2_s(weights=weights)
+    model.classifier = nn.Identity()
+    
+    extractor = FeatureExtractor(1280, model, transforms, device, **kwargs)
+    return extractor
+
+def create_swin_v2_s(device = torch.device("cpu"), **kwargs) -> FeatureExtractor:
+    weights = models.Swin_V2_S_Weights.IMAGENET1K_V1
+    transforms = weights.transforms()
+    
+    model = models.swin_v2_s(weights=weights)
+    model.head = nn.Identity()
         
-        model = models.swin_v2_s(weights=weights)
-        model.head = nn.Identity()
-        
-        FeatureExtractor.__init__(self, model, transforms, device)
+    extractor = FeatureExtractor(512, model, transforms, device, **kwargs)
+    return extractor
+
+def create_max_vit_tiny(device = torch.device("cpu"), **kwargs) -> FeatureExtractor:
+    weights = models.MaxVit_T_Weights.IMAGENET1K_V1
+    transforms = weights.transforms()
+    
+    model = models.maxvit_t(weights=weights)
+    model.classifier = nn.Identity()
+    
+    extractor = FeatureExtractor(512, model, transforms, device, **kwargs)
+    return extractor

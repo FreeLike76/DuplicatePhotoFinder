@@ -1,19 +1,19 @@
 from typing import List
+from pathlib import Path
 from uuid import UUID, uuid4
 
 from PIL import Image
+from annoy import AnnoyIndex
 
 # Local
-from .models import FeatureExtractor, EfficientNetV2S
+from .models import FeatureExtractor, create_efficientnet_v2_s
 
 class DuplicatePhotoFinder:
     def __init__(
         self,
-        feature_extractor: FeatureExtractor = EfficientNetV2S("cuda")
+        feature_extractor: FeatureExtractor = create_efficientnet_v2_s("cuda")
     ) -> None:
-        # TODO: Load torch model & qdrant client
         self.feature_extractor = feature_extractor
-        self.db_client = None
 
     def shutdown(self):
         # TODO: gracefull shutdown
@@ -23,28 +23,53 @@ class DuplicatePhotoFinder:
         self,
         images: List[Image.Image]
     ) -> UUID:
-        for image in images:
+        # TODO: unique id
+        collection_id = uuid4()
+        vector_storage = AnnoyIndex(self.feature_extractor.features_size, "angular")
+        
+        for i, image in enumerate(images):
             features = self.feature_extractor.inference(image)
-            print(features)
-        return uuid4()
-    
-        # db, get collection_id
-        # for each image in images:
-        #     embedding = self.feature_extractor.inference(image)
-        #     db, insert embedding
-        # db, save
-        # return collection_id
-        pass
+            vector_storage.add_item(i, features)
+        
+        # TODO: tree size
+        vector_storage.build(len(images) // 4 + 1)
+        vector_storage.save(f"data/{str(collection_id)}.ann")
+        vector_storage.unload()
+        
+        return collection_id
     
     def find_duplicates(
         self,
         collection_id: UUID,
         threshold: float = 0.9
-    ) -> List[int]:
-        # db, try load
-        # for each embedding in collection:
-        #     db, find similar embeddings
-        #    if similarity > threshold:
-        #        mark
-        # return list of image indexes
-        pass
+    ) -> List[List[int]]:
+        # Load
+        index_p = Path(f"data/{str(collection_id)}.ann")
+        if not index_p.exists() or not index_p.is_file():
+            raise FileNotFoundError(f"Index {index_p} not found.")
+        
+        vector_storage = AnnoyIndex(self.feature_extractor.features_size, "angular")
+        vector_storage.load(f"data/{str(collection_id)}.ann")
+        
+        # Find duplicates
+        n_items = vector_storage.get_n_items()
+        n_neighbours = int(n_items // 4 + 1)
+        search_results = [[] for _ in range(n_items)]
+        
+        for i in range(n_items):
+            neighbours, distances = vector_storage.get_nns_by_item(
+                i, n_neighbours,
+                include_distances=True
+            )
+            
+            # TODO: Threshold
+            for j, dist in zip(neighbours, distances):
+                #if dist < threshold:
+                duplicate = {
+                    "index": i,
+                    "neighbour": j,
+                    "distance": dist
+                }
+                search_results[i].append(duplicate)
+        
+        return search_results
