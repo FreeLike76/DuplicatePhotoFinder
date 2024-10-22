@@ -1,21 +1,25 @@
-from typing import List
 from pathlib import Path
-from uuid import UUID, uuid4
-
-from PIL import Image
-from annoy import AnnoyIndex
-
-# Local
-from .models import FeatureExtractor, create_efficientnet_v2_s
+from typing import List
+from uuid import UUID
 
 import numpy as np
+from PIL import Image
+
+# Local
+from .storage import LocalIndexManager
+from .models import FeatureExtractor, ModelRegistry
 
 class DuplicatePhotoFinder:
     def __init__(
         self,
-        feature_extractor: FeatureExtractor = create_efficientnet_v2_s(device="cuda")
+        local_storage_dir = Path("data/index"),
+        feature_extractor = ModelRegistry.create_swin_v2_s(device="cuda")
     ) -> None:
         self.feature_extractor = feature_extractor
+        self.index_manager = LocalIndexManager(
+            local_storage_dir,
+            self.feature_extractor.features_size
+        )
 
     def shutdown(self):
         # TODO: gracefull shutdown
@@ -25,18 +29,22 @@ class DuplicatePhotoFinder:
         self,
         images: List[Image.Image]
     ) -> UUID:
-        # TODO: unique id
-        collection_id = uuid4()
-        vector_storage = AnnoyIndex(self.feature_extractor.features_size, "dot")
-        
+        # Create & fill index with image features
+        vector_index = self.index_manager.create_index()
         for i, image in enumerate(images):
             features = self.feature_extractor.inference(image)
-            vector_storage.add_item(i, features)
+            vector_index.add_item(i, features)
         
-        # TODO: tree size
-        vector_storage.build(len(images) // 4 + 1)
-        vector_storage.save(f"data/{str(collection_id)}.ann")
-        vector_storage.unload()
+        # TODO: tune n_trees
+        n_trees = len(images) // 5 + 1
+        n_trees = min(25, max(10, n_trees))
+        
+        # Save under unique id
+        vector_index.build(n_trees)
+        collection_id = self.index_manager.save_index(
+            vector_index,
+            unload=True
+        )
         
         return collection_id
     
@@ -45,46 +53,22 @@ class DuplicatePhotoFinder:
         collection_id: UUID,
         threshold: float = 0.9
     ) -> List[List[int]]:
-        # Load
-        index_p = Path(f"data/{str(collection_id)}.ann")
-        if not index_p.exists() or not index_p.is_file():
-            raise FileNotFoundError(f"Index {index_p} not found.")
-        
-        vector_storage = AnnoyIndex(self.feature_extractor.features_size, "dot")
-        vector_storage.load(f"data/{str(collection_id)}.ann")
+        # Load index
+        vector_index = self.index_manager.load_index(collection_id)
+        dot_threshold = threshold * 2 - 1 # [0, 1] -> [-1, 1]
         
         # Find duplicates
-        #n_items = vector_storage.get_n_items()
-        #n_neighbours = int(n_items // 4 + 1)
-        #search_results = [[] for _ in range(n_items)]
+        n_items = vector_index.get_n_items()
+        search_results = [[] for _ in range(n_items)]
         
+        ## Pairwise
+        #dist_matrix = np.zeros((n_items, n_items), dtype=np.float32)
         #for i in range(n_items):
-        #    neighbours, distances = vector_storage.get_nns_by_item(
-        #        i, n_neighbours,
-        #        include_distances=True
-        #    )
-        #    
-        #    # TODO: Threshold
-        #    for j, dist in zip(neighbours, distances):
-        #        #if dist < threshold:
-        #        duplicate = {
-        #            "index": i,
-        #            "neighbour": j,
-        #            "distance": dist
-        #        }
-        #        search_results[i].append(duplicate)
+        #    for j in range(i + 1, n_items):
+        #        dist = vector_index.get_distance(i, j)
+        #        dist_matrix[i, j] = dist
+        #        dist_matrix[j, i] = dist
+        #search_results = dist_matrix.tolist()
         
-        # Find duplicates
-        n_items = vector_storage.get_n_items()
-        #search_results = [[] for _ in range(n_items)]
-        dist_matrix = np.zeros((n_items, n_items), dtype=np.float32)
-        for i in range(n_items):
-            for j in range(i + 1, n_items):
-                dist = vector_storage.get_distance(i, j)
-                dist_matrix[i, j] = dist
-                dist_matrix[j, i] = dist
-        
-        vector_storage.unload()
-        
-        search_results = dist_matrix.tolist()
+        vector_index.unload()
         return search_results

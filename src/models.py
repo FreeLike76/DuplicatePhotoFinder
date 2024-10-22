@@ -5,8 +5,7 @@ from PIL import Image
 
 import torch
 import torch.nn as nn
-#import torch.nn.functional as F
-from torchvision import models, transforms
+from torchvision import models
 
 class FeatureExtractor:
     def __init__(
@@ -28,8 +27,8 @@ class FeatureExtractor:
         
         self.model.to(self.device)
         self.model.eval()
-        # FIXME: Not working
-        #self.model.compile()
+        # FIXME: Driver error
+        # self.model.compile()
     
     def inference(
         self,
@@ -73,32 +72,37 @@ class FeatureExtractor:
     #    
     #    return out_np
 
-def create_efficientnet_v2_s(**kwargs) -> FeatureExtractor:
-    weights = models.EfficientNet_V2_S_Weights.IMAGENET1K_V1
-    transforms = weights.transforms()
+class ModelRegistry:
     
-    model = models.efficientnet_v2_s(weights=weights)
-    model.classifier = nn.Identity()
-    
-    extractor = FeatureExtractor(1280, model, transforms, **kwargs)
-    return extractor
+    @staticmethod
+    def create_efficientnet_v2_s(**kwargs) -> FeatureExtractor:
+        weights = models.EfficientNet_V2_S_Weights.IMAGENET1K_V1
+        transforms = weights.transforms()
 
-def create_swin_v2_s(**kwargs) -> FeatureExtractor:
-    weights = models.Swin_V2_S_Weights.IMAGENET1K_V1
-    transforms = weights.transforms()
-    
-    model = models.swin_v2_s(weights=weights)
-    model.head = nn.Identity()
+        model = models.efficientnet_v2_s(weights=weights)
+        model.classifier = nn.Identity()
+
+        extractor = FeatureExtractor(1280, model, transforms, **kwargs)
+        return extractor
+
+    @staticmethod
+    def create_swin_v2_s(**kwargs) -> FeatureExtractor:
+        weights = models.Swin_V2_S_Weights.IMAGENET1K_V1
+        transforms = weights.transforms()
+
+        model = models.swin_v2_s(weights=weights)
+        model.head = nn.Identity()
+
+        extractor = FeatureExtractor(768, model, transforms, **kwargs)
+        return extractor
+
+    @staticmethod
+    def create_max_vit_tiny(**kwargs) -> FeatureExtractor:
+        weights = models.MaxVit_T_Weights.IMAGENET1K_V1
+        transforms = weights.transforms()
+
+        model = models.maxvit_t(weights=weights)
+        model.classifier[-1] = nn.Identity()
         
-    extractor = FeatureExtractor(512, model, transforms, **kwargs)
-    return extractor
-
-def create_max_vit_tiny(**kwargs) -> FeatureExtractor:
-    weights = models.MaxVit_T_Weights.IMAGENET1K_V1
-    transforms = weights.transforms()
-    
-    model = models.maxvit_t(weights=weights)
-    model.classifier = nn.Identity()
-    
-    extractor = FeatureExtractor(512, model, transforms, **kwargs)
-    return extractor
+        extractor = FeatureExtractor(512, model, transforms, **kwargs)
+        return extractor
