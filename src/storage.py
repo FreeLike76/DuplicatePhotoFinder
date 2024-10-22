@@ -10,9 +10,6 @@ class LocalIndexManager:
         features_size: int,
         metric: Literal["angular", "euclidean", "manhattan", "hamming", "dot"] = "dot"
     ) -> None:
-        # Make sure the local_dir is dir
-        if not local_dir.is_dir():
-            raise ValueError(f"Invalid local_dir: {local_dir}")
         if not local_dir.exists():
             local_dir.mkdir(parents=True, exist_ok=True)
         

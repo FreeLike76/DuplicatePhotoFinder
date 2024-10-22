@@ -58,19 +58,6 @@ class FeatureExtractor:
             return np.zeros_like(x)
         x_norm = x / norm
         return x_norm
-    
-    #def inference_batch(
-    #    self,
-    #    x: List[Image.Image]
-    #) -> np.ndarray:
-    #    with torch.inference_mode():
-    #        images_pt = torch.stack([self.transforms(image) for image in x])
-    #        images_pt = images_pt.to(self.device)
-    #        
-    #        out_pt: torch.Tensor = self.model(images_pt)
-    #        out_np = out_pt.cpu().numpy()
-    #    
-    #    return out_np
 
 class ModelRegistry:
     

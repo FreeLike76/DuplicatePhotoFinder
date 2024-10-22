@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, UploadFile, File, HTTPException
 
 from src.service import DuplicatePhotoFinder
+from src.entities import ImageUploadResult, DuplicateImagePair
 from src.utils import is_valid_image_file, open_image
 
 # Init
@@ -33,7 +34,7 @@ def get_root():
     }
 
 @app.post("/images")
-async def post_images(files: List[UploadFile] = File(...)):
+async def post_images(files: List[UploadFile] = File(...)) -> ImageUploadResult:
     images = []
     image_ids = []
     image_id = 0
@@ -43,7 +44,6 @@ async def post_images(files: List[UploadFile] = File(...)):
         if not is_valid_image_file(file):
             image_ids.append(None)
             continue
-        
         # Open
         try:
             contents = await file.read()
@@ -65,16 +65,17 @@ async def post_images(files: List[UploadFile] = File(...)):
     
     # Process    
     request_id: UUID = dpf_service.create_collection(images)
-    response = {
-        "request_id": str(request_id),
-        "image_ids": image_ids,
-    }
+    response = ImageUploadResult(
+        request_id=request_id,
+        image_ids=image_ids
+    )
     return response
 
 @app.get("/duplicates/{request_id}")
-def get_duplicates(request_id: UUID, threshold: float = 0.9):
+def get_duplicates(request_id: UUID, threshold: float = 0.75) -> List[DuplicateImagePair]:
     try:
         duplicates = dpf_service.find_duplicates(request_id, threshold)
+    
     except FileNotFoundError:
         raise HTTPException(
             status_code=404,
