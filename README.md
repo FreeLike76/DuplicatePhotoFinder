@@ -31,7 +31,7 @@ The service is containerized using Docker, making it easy to deploy and run anyw
     git clone https://github.com/FreeLike76/DuplicatePhotoFinder.git
     cd DuplicatePhotoFinder
     ```
-3. Build and start the service
+3. Start the service.
     ```bash
     docker-compose up
     ```
@@ -47,16 +47,11 @@ Alternatively, you can run the service manually on your local machine.
     cd DuplicatePhotoFinder
     ```
 2. Create and activate a `Python 3.12` environment using `venv` or `conda`.
-3. Clone the repository.
-    ```bash
-    git clone https://github.com/FreeLike76/DuplicatePhotoFinder.git
-    cd DuplicatePhotoFinder
-    ```
-4. Install dependencies.
+3. Install dependencies.
     ```bash
     pip install -r requirements.txt
     ```
-5. Start the service using Uvicorn.
+4. Start the service using Uvicorn.
     ```bash
     uvicorn main:app --host IP --port PORT
     ```
