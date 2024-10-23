@@ -80,11 +80,11 @@ python test.py
 
 ### API
 
-- **`GET` /**: Root endpoint to ensure the server is healthy & running.
+- **`GET` /**: Root endpoint to ensure the server is running & healhty.
 
-- **`POST` /images**: Upload a collection of images and receive a unique collection ID for future reference. Returns a unique request_id: UUID (collection identifier) and an indexed list of successfully uploaded images (None if failed).
+- **`POST` /images**: Upload a collection of images. Returns a unique request_id: UUID, used for future requests, and an indexed list of successfully uploaded images (or None if an image failed to meet the requirements).
 
-- **`GET` /duplicates/{*request_id*}**: Search for duplicate images within a specified collection. Returns a list of duplicate image pairs and their similarity scores.
+- **`GET` /duplicates/{*request_id*}**: Search for duplicate images within a specified collection. A path parameter request_id: UUID must be provided. Additionally, you can include an optional threshold: float (0.75) query parameter to specify the minimum similarity score. Returns a list of duplicate image pairs along with their similarity scores.
 
 ## Future plans:
 
@@ -93,4 +93,4 @@ python test.py
 - [ ] CUDA support for faster inference (docker container).
 - [ ] Async/batch image processing.
 - [ ] Support for additional DL models.
-- [ ] Alternative storage solutions.
+- [ ] Alternative vector storage solutions.
