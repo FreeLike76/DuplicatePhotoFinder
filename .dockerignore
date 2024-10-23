@@ -1,0 +1,23 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Docker
+docker-compose.yml
+Dockerfile
+.docker
+.dockerignore
+
+# Python
+**/__pycache__/
+**/*.py[cod]
+
+# Development
+.vscode/
+
+# Testing
+.pytest_cache/
+
+# Misc
+data/
