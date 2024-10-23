@@ -53,13 +53,14 @@ class DuplicatePhotoFinder:
     def find_duplicates(
         self,
         collection_id: UUID,
-        threshold: float = 0.75
+        threshold: float = 0.8
     ) -> List[DuplicateImagePair]:
         # Load index
         vector_index = self.index_manager.load_index(collection_id)
         
         # Pairwise comparison
         search_results = []
+        threshold = max(0, min(1, threshold))
         dot_threshold = threshold * 2 - 1 # [0, 1] -> [-1, 1]
         
         n_items = vector_index.get_n_items()

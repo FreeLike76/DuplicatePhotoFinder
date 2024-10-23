@@ -46,7 +46,7 @@ Alternatively, you can run the service manually on your local machine.
     git clone URL
     cd DuplicatePhotoFinder
     ```
-2. Create `Python 3.12` environment using `venv` or `conda`.
+2. Create and activate a `Python 3.12` environment using `venv` or `conda`.
 3. Clone the repository.
     ```bash
     git clone https://github.com/FreeLike76/LearnOpenGL.git
@@ -63,10 +63,16 @@ Alternatively, you can run the service manually on your local machine.
 
 ### Testing
 
-To verify that everything is working correctly, a test.py file is provided. This file includes various tests to ensure the functionality of the service. A python environment is required.
-```bash
-python test.py
-```
+To verify that everything is working correctly, a series of basic tests is provided in test_main.py file. To run the tests, follow the steps below.
+1. Setup environment as described in **How to Run / Manually** section.
+2. Install additional packages.
+    ```bash
+    pip install httpx pytest
+    ```
+3. Run the tests.
+    ```bash
+    pytest test_main.py
+    ```
 
 ## Documentation
 

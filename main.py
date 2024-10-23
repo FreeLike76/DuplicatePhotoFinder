@@ -30,7 +30,7 @@ app = FastAPI(lifespan=lifespan)
 def get_root():
     return {
         "name": "Duplicate Photo Finder",
-        "Status": "OK"
+        "status": "OK"
     }
 
 @app.post("/images")
@@ -72,7 +72,7 @@ async def post_images(files: List[UploadFile] = File(...)) -> ImageUploadResult:
     return response
 
 @app.get("/duplicates/{request_id}")
-def get_duplicates(request_id: UUID, threshold: float = 0.75) -> List[DuplicateImagePair]:
+def get_duplicates(request_id: UUID, threshold: float = 0.8) -> List[DuplicateImagePair]:
     try:
         duplicates = dpf_service.find_duplicates(request_id, threshold)
     
