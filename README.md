@@ -1,4 +1,4 @@
-# Photo Duplicate Finder
+# Duplicate Photo Finder
 
 This service provides an API for detecting duplicate photos using deep learning models. It allows users to upload multiple images, stores them as feature vectors and identifies duplicates based on features similarity.
 
@@ -28,7 +28,7 @@ The service is containerized using Docker, making it easy to deploy and run anyw
 1. Make sure you have Docker installed on your machine.
 2. Clone the repository.
     ```bash
-    git clone https://github.com/FreeLike76/LearnOpenGL.git
+    git clone https://github.com/FreeLike76/DuplicatePhotoFinder.git
     cd DuplicatePhotoFinder
     ```
 3. Build and start the service
@@ -49,7 +49,7 @@ Alternatively, you can run the service manually on your local machine.
 2. Create and activate a `Python 3.12` environment using `venv` or `conda`.
 3. Clone the repository.
     ```bash
-    git clone https://github.com/FreeLike76/LearnOpenGL.git
+    git clone https://github.com/FreeLike76/DuplicatePhotoFinder.git
     cd DuplicatePhotoFinder
     ```
 4. Install dependencies.
@@ -88,9 +88,9 @@ To verify that everything is working correctly, a series of basic tests is provi
 
 - **`GET` /**: Root endpoint to ensure the server is running & healhty.
 
-- **`POST` /images**: Upload a collection of images. Returns a unique request_id: UUID, used for future requests, and an indexed list of successfully uploaded images (or None if an image failed to meet the requirements).
+- **`POST` /images**: Upload a collection of images as `multipart/form-data` under 'files' key. Returns a unique `request_id: UUID`, used for future requests, and an indexed list of successfully uploaded images (or None if an image failed to meet the requirements).
 
-- **`GET` /duplicates/{*request_id*}**: Search for duplicate images within a specified collection. A path parameter request_id: UUID must be provided. Additionally, you can include an optional threshold: float (0.75) query parameter to specify the minimum similarity score. Returns a list of duplicate image pairs along with their similarity scores.
+- **`GET` /duplicates/{*request_id*}**: Search for duplicate images within a specified collection. A path parameter `request_id: UUID` must be provided. Additionally, you can include an optional threshold: float (0.8) query parameter to specify the minimum similarity score. Returns a list of duplicate image pairs along with their similarity scores.
 
 ## Future plans:
 
