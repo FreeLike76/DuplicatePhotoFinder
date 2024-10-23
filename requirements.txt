@@ -1,0 +1,8 @@
+numpy==2.1.2
+torch==2.4.1
+torchvision==0.19.1
+annoy==1.17.3
+Pillow==11.0.0
+pydantic==2.9.2
+fastapi[standard]==0.115.2
+uvicorn[standard]==0.32.0
